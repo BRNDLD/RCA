@@ -105,3 +105,44 @@ cd .\frontend
 npm install
 npm run dev
 ```
+
+
+Deploy:
+
+```
+
+rm -rf RCA
+git clone https://github.com/BRNDLD/RCA.git
+cd RCA/backen
+
+
+az webapp config appsettings set \
+  --resource-group rca-backend-api_group-b22b \
+  --name rca-backend-api \
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+az webapp config appsettings set \
+  --resource-group rca-backend-api_group-b22b \
+  --name rca-backend-api \
+  --settings DATABASE_URL="sqlite:////home/site/rca.db"
+
+az webapp config set \
+  --resource-group rca-backend-api_group-b22b \
+  --name rca-backend-api \
+  --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 wsgi:app"
+
+zip -r backend.zip . \
+  -x "*.git*" "__pycache__/*" "*.pyc" "app.py"
+
+unzip -l backend.zip | head
+
+az webapp deploy \
+  --resource-group rca-backend-api_group-b22b \
+  --name rca-backend-api \
+  --src-path backend.zip \
+  --type zip \
+  --clean true
+
+curl https://rca-backend-api-b6bjg8dmgsbzdfak.canadacentral-01.azurewebsites.net/api/health
+```
+
