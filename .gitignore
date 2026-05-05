@@ -1,0 +1,38 @@
+# Ignore everything by default (repo should only contain backend/, frontend/ and README.md)
+*
+
+# Allowlist
+!.gitignore
+!README.md
+!backend/
+!backend/**
+!frontend/
+!frontend/**
+
+# Backend
+backend/.venv/
+backend/instance/
+backend/*.sqlite3
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# General
+.env
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Project extras (keep repo clean)
+rca_concept.html
+RCA_5Porques_Documentacion 1.docx
+ProPlanesList.png
+mockup.png
+Designer (3).png
+Copia de FADM02-1  Formato Acciones Correctivas y de Mejora SAM.xlsx
