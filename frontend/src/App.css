@@ -631,10 +631,6 @@ textarea:focus {
         grid-auto-rows: auto;
       }
     }
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
-}
 
 #next-steps {
   display: flex;
