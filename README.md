@@ -1,13 +1,18 @@
 # RCA (Flask + React)
 
-Prototipo rápido basado en el formato **FADM02-1** (Excel) para crear y gestionar un RCA/SAM con un flujo tipo wizard (como el mock).
+Prototipo rápido basado en el formato **FADM02-1** (Excel) para crear y gestionar un RCA/SAM con un flujo tipo wizard.
+
+## URLs en Producción
+
+- **Backend**: https://rca-backend-api-b6bjg8dmgsbzdfak.canadacentral-01.azurewebsites.net
+- **Frontend**: https://orange-sand-073dbbc1e.7.azurestaticapps.net
 
 ## Estructura
 
 - `backend/`: API REST en Flask + SQLite
-- `frontend/`: UI React (Vite) con proxy a `/api`
+- `frontend/`: UI React (Vite) con variable `VITE_API_BASE` para conectar al backend
 
-## Requisitos
+## Requisitos (Desarrollo Local)
 
 - Windows
 - Python 3.11+ (probado con Python 3.13)
@@ -34,15 +39,15 @@ py .\wsgi.py
 
 La API queda en `http://127.0.0.1:5000`.
 
-Endpoints principales:
-- `GET /api/health`
-- `GET /api/options` (listas internas; el Excel es solo guía)
-- `GET /api/rcas?status=draft|published`
-- `POST /api/rcas`
-- `PUT /api/rcas/{id}`
-- `POST /api/rcas/{id}/publish`
+**Endpoints principales:**
+- `GET /api/health` - Verificar salud
+- `GET /api/options` - Opciones internas (orígenes, sistemas, categorías, etc.)
+- `GET /api/rcas?status=draft|published` - Listar RCAs
+- `POST /api/rcas` - Crear RCA
+- `PUT /api/rcas/{id}` - Actualizar RCA
+- `POST /api/rcas/{id}/publish` - Publicar RCA
 
-> Nota: si cambias el modelo, puede que necesites borrar `backend/rca.sqlite3` (es un prototipo sin migraciones).
+> Nota: Si cambias el modelo, puede que necesites borrar `backend/rca.sqlite3` (es un prototipo sin migraciones).
 
 ## Frontend (React)
 
@@ -53,7 +58,7 @@ cd .\frontend
 npm install
 ```
 
-### 2) Iniciar UI
+### 2) Iniciar dev server
 
 ```powershell
 cd .\frontend
@@ -62,35 +67,34 @@ npm run dev
 
 Abrir: `http://localhost:5173`
 
-El frontend usa proxy de Vite para llamar al backend en `/api`.
+El frontend usa `VITE_API_BASE` para llamar al backend.
 
-## Azure (despliegue rápido)
+## Azure (Despliegue CI/CD Automático)
 
-### Backend: Azure App Service (Linux)
+### Backend: Azure App Service
 
-- Publica solo la carpeta `backend/`.
-- En App Service configura el **Startup Command**:
-
-```bash
-gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2
-```
-
-Opcional (recomendado para producción): define `DATABASE_URL` apuntando a un DB administrado (Azure Database for PostgreSQL/Azure SQL). Si no, usa SQLite (sirve para demo / una sola instancia).
+- Deployado desde rama `main` → GitHub Actions automático
+- Startup Command: `gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2`
+- Database: SQLite local
 
 ### Frontend: Azure Static Web Apps
 
-- Build: `npm run build`
+- Deployado automáticamente desde rama `main` vía GitHub Actions
+- Build: `npm run build` en directorio `./frontend`
 - Output: `frontend/dist`
 
-Para que el frontend llame al backend en Azure, define esta variable de entorno en el build de Static Web Apps:
+**Variable de entorno (en GitHub Actions workflow):**
 
-- `VITE_API_BASE=https://<TU-APP>.azurewebsites.net`
+```yaml
+env:
+  VITE_API_BASE: https://rca-backend-api-b6bjg8dmgsbzdfak.canadacentral-01.azurewebsites.net
+```
 
-(En local puedes dejarla vacía: el proxy de Vite usa `/api` hacia `http://127.0.0.1:5000`.)
+El frontend usa esta variable para conectar al backend en Azure.
 
-## Comandos rápidos (2 terminales)
+## Desarrollo Local (2 terminales)
 
-**Terminal 1 (API):**
+**Terminal 1 (Backend):**
 ```powershell
 cd .\backend
 py -m venv .venv
@@ -99,50 +103,15 @@ pip install -r requirements.txt
 py .\wsgi.py
 ```
 
-**Terminal 2 (UI):**
+**Terminal 2 (Frontend):**
 ```powershell
 cd .\frontend
 npm install
 npm run dev
 ```
 
+## Notas
 
-Deploy:
-
-```
-
-rm -rf RCA
-git clone https://github.com/BRNDLD/RCA.git
-cd RCA/backen
-
-
-az webapp config appsettings set \
-  --resource-group rca-backend-api_group-b22b \
-  --name rca-backend-api \
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
-
-az webapp config appsettings set \
-  --resource-group rca-backend-api_group-b22b \
-  --name rca-backend-api \
-  --settings DATABASE_URL="sqlite:////home/site/rca.db"
-
-az webapp config set \
-  --resource-group rca-backend-api_group-b22b \
-  --name rca-backend-api \
-  --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 wsgi:app"
-
-zip -r backend.zip . \
-  -x "*.git*" "__pycache__/*" "*.pyc" "app.py"
-
-unzip -l backend.zip | head
-
-az webapp deploy \
-  --resource-group rca-backend-api_group-b22b \
-  --name rca-backend-api \
-  --src-path backend.zip \
-  --type zip \
-  --clean true
-
-curl https://rca-backend-api-b6bjg8dmgsbzdfak.canadacentral-01.azurewebsites.net/api/health
-```
-
+- En desarrollo, el frontend hace proxy a `/api` hacia el backend local
+- En producción, el frontend usa `VITE_API_BASE` para conectar a Azure
+- Base de datos: SQLite (cambios al modelo pueden requerir borrar `backend/rca.sqlite3`)
